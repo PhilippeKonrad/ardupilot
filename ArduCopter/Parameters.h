@@ -386,6 +386,7 @@ public:
         k_param__gcs,
         k_param_throw_altitude_descend,
         k_param_throw_altitude_ascend,
+        k_param_throw_motor_delay,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -490,6 +491,7 @@ public:
 
     AP_Float         throw_altitude_descend;    // target altitude (meters) to descend during a drop, (must be positive)
     AP_Float         throw_altitude_ascend;     // target altitude (meters) to ascend during a throw upwards, (must be positive)
+    AP_Float         throw_motor_delay;         //delay in seconds after throw detection before motor spool up
 #endif
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
