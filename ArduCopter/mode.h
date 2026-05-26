@@ -1894,6 +1894,7 @@ private:
     enum ThrowModeStage {
         Throw_Disarmed,
         Throw_Detecting,
+        Throw_Delay_Motor_Start,
         Throw_Wait_Throttle_Unlimited,
         Throw_Uprighting,
         Throw_HgtStabilise,
@@ -1903,6 +1904,7 @@ private:
     ThrowModeStage stage = Throw_Disarmed;
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
+    uint32_t throw_detected_ms;
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
