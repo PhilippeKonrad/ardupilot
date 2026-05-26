@@ -562,6 +562,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_ascend, "THROW_ALT_ACSND", 3.0),
+    // @Param: THROW_MOT_DELAY
+    // @DisplayName: Throw mode motor start delay
+    // @Description: Delay between successful throw detection and commanding motors to full spool range. A value of zero gives the normal immediate motor start behavior.
+    // @Units: s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    GSCALAR(throw_motor_delay, "THROW_MOT_DELAY", 0.0f),
+
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
