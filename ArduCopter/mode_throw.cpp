@@ -41,6 +41,7 @@ void ModeThrow::run()
     /* Throw State Machine
     Throw_Disarmed - motors are off
     Throw_Detecting -  motors are on and we are waiting for the throw
+    Throw_Delay_Motor_Start - the throw has been detected and we are delaying motor spool-up
     Throw_Uprighting - the throw has been detected and the copter is being uprighted
     Throw_HgtStabilise - the copter is kept level and  height is stabilised about the target height
     Throw_PosHold - the copter is kept at a constant position and height
@@ -54,13 +55,25 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
         stage = Throw_Detecting;
 
-    } else if (stage == Throw_Detecting && throw_detected()){
-        gcs().send_text(MAV_SEVERITY_INFO,"throw detected - spooling motors");
+    } else if (stage == Throw_Detecting && throw_detected()) {
+        throw_detected_ms = AP_HAL::millis();
+
+        if (g.throw_motor_delay.get() > 0.0f) {
+            gcs().send_text(MAV_SEVERITY_INFO, "throw detected - delaying motor spool");
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "throw detected - spooling motors");
+        }
+
         copter.set_land_complete(false);
-        stage = Throw_Wait_Throttle_Unlimited;
+        stage = Throw_Delay_Motor_Start;
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
+
+    } else if (stage == Throw_Delay_Motor_Start &&
+               ((AP_HAL::millis() - throw_detected_ms) >= (uint32_t)(MAX(0.0f, g.throw_motor_delay.get()) * 1000.0f))) {
+        gcs().send_text(MAV_SEVERITY_INFO, "throw motor delay complete - spooling motors");
+        stage = Throw_Wait_Throttle_Unlimited;
 
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
@@ -69,7 +82,6 @@ void ModeThrow::run()
     } else if (stage == Throw_Uprighting && throw_attitude_good()) {
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
-
         // initialise the z controller
         pos_control->D_init_controller_no_descent();
 
@@ -148,7 +160,23 @@ void ModeThrow::run()
         AP_Notify::flags.waiting_for_throw = true;
 
         break;
+        
+    case Throw_Delay_Motor_Start:
 
+        // keep motors stopped/idle during the post-detection delay
+        if (g.throw_motor_start == PreThrowMotorState::RUNNING) {
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        } else {
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        }
+
+        // hold throttle at zero and continually reset the attitude controller during the delay
+        attitude_control->reset_yaw_target_and_rate();
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_throttle_out(0, true, g.throttle_filt);
+
+        break;
+        
     case Throw_Wait_Throttle_Unlimited:
 
         // set motors to full range
