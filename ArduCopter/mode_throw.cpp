@@ -17,6 +17,10 @@ bool ModeThrow::init(bool ignore_checks)
 
     // init state
     stage = Throw_Disarmed;
+    
+
+    // reset post-throw motor delay timer
+    throw_detected_ms = 0;
     nextmode_attempted = false;
 
     // initialise pos controller speed and acceleration
